@@ -1,29 +1,35 @@
 const { request } = require("express");
 const User = require("../models/user")
 const crypto = require('crypto');
-const sgMail = require('@sendgrid/mail');
+const nodemailer = require("nodemailer")
 
 function generateOTP() {
     return crypto.randomBytes(3).toString('hex'); // Genera un OTP a 6 cifre esadecimali
 }
 
 async function sendOTP(email, otp) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const msg = {
+    const transporter = nodemailer.createTransport({
+        service: "Gmail",
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+            user: "fakeautomotive@gmail.com",
+            pass: process.env.PASSWORD_EMAIL
+        }
+    })
+    const mailOptions = {
+        from: "fakeautomotive@gmail.com",
         to: email,
-        from: 'fakeautomotive@gmail.com', // Sostituisci con il tuo indirizzo email verificato su SendGrid
-        subject: 'OTP code for confirm registration in fake automotive',
-        text: `Your OTP code is ${otp}`,
-        html: `<strong>Your OTP code is ${otp}</strong>`,
-    };
-    sgMail
-        .send(msg)
-        .then(() => {
-            console.log("Email sent")
-        })
-        .catch((error) => {
-            console.error(error.body.errors)
-        })
+        subject: "OTP code for confirm registration in fake automotive",
+        text: `Your OTP code is ${otp}`
+    }
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log("Email sent: ", info.response);
+    } catch (error) {
+        console.error("Error sending email: ", error);
+    }
 }
 
 const getAllUsers = async (req, res, next) => {
@@ -110,8 +116,8 @@ const createNewCustomer = async (req, res, next) => {
         })
         // TO-DO -> OTP
 
-        const savedCustomer = await newCustomer.save()
         await sendOTP(req.body.email, otp)
+        const savedCustomer = await newCustomer.save()
         return res.status(201).json(savedCustomer)
     }catch (err) {
         console.error(err);
