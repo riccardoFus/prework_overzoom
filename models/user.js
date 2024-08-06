@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 // Definizione dello schema per la collezione Users
@@ -26,6 +27,12 @@ const userSchema = new mongoose.Schema({
     role : {
         type : String,
         enum : ["admin", "customer"]
+    },
+    otp: {
+        type: String
+    },
+    otp_expiry: {
+        type: Date
     }
 });
 

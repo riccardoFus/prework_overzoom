@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const User = require('./models/user');
-const sgMail = require('@sendgrid/mail')
 require('dotenv').config();
 
 // Funzione per verificare se un amministratore esiste già nel database
@@ -16,7 +15,7 @@ async function checkIfAdminAlreadyExists() {
 }
 
 // Funzione per configurare l'amministratore
-function setupAdmin(){
+function setupFirstAdmin(){
     // Connessione a MongoDB
     mongoose.connect(process.env.URL_DB)
     .then(async () => {
@@ -28,7 +27,9 @@ function setupAdmin(){
             email: 'admin@automotive.com',
             password: process.env.PASSWORD_ADMIN_1,
             confirmed_user: true,
-            role: 'admin'
+            role: 'admin',
+            otp: '',
+            otp_expiry: Date()
         });
 
         // Verifica se l'amministratore esiste già
@@ -52,6 +53,7 @@ function setupAdmin(){
     .catch((error) => console.error('MongoDB connection error:', error));
 }
 
+/*
 function sendEmail(){
     sgMail.setApiKey(process.env.SENDGRID_API_KEY)
     const msg = {
@@ -69,13 +71,29 @@ function sendEmail(){
             console.error(error)
         })
 }
+*/
 
 const app = express();
 const port = 3000;
+const routes = require("./routes/routes");
+
+app.use(express.json());
+app.use(express.urlencoded({extended : true}));
+app.use(express.static(__dirname + "/html/"), routes);
 
 // Avvia il server
 app.listen(port, () => {  
     console.log(`Server running on http://localhost:${port}`);
-    setupAdmin()
-    // sendEmail()
+    setupFirstAdmin()
+});
+
+app.use((req, res, next) => {
+    console.log("called: " + req.method + ' ' + req.url)
+    next()
+})
+
+/* Default 404 handler */
+app.use((req, res) => {
+    res.status(404);
+    res.json({error: 'Not found'});
 });
