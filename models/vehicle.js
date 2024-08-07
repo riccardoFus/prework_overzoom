@@ -25,10 +25,10 @@ const vehicleSchema = new mongoose.Schema({
     // Campo status: stringa con valori predefiniti "on sale" o "under maintenance"
     status : {
         type : String,
-        enum : ["on sale", "under maintenance"]
+        enum : ["on sale", "under maintenance", "sold", ""]
     },
     // Campo current_owner_id: stringa opzionale (ID del proprietario attuale)
-    current_owner_id : {
+    current_owner_email : {
         type : String
     }
 });

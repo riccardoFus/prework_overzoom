@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 // Definizione dello schema per la collezione Sales
 const saleSchema = new mongoose.Schema({
     // Campo vehicle_id: stringa richiesta (ID del veicolo venduto)
-    vehicle_id: {
+    vehicle_vin: {
         type: String,
         required: true
     },
     // Campo customer_id: stringa richiesta (ID del cliente che ha acquistato il veicolo)
-    customer_id: {
+    customer_email: {
         type: String, 
         required: true
     },

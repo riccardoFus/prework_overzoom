@@ -17,4 +17,27 @@ router.get('/api/customers', userController.getAllCustomers);
 router.post('/api/new_admin', userController.createNewAdmin);
 router.post('/api/new_customer', userController.createNewCustomer);
 
+// Definisce le route per ottenere i veicoli, in vendita e in manutenzione
+router.get('/api/vehicles', vehicleController.getAllVehicles)
+router.get('/api/on_sale_vehicles', vehicleController.getAllOnSaleVehicles)
+router.get('/api/under_maintenance_vehicles', vehicleController.getAllUnderMaintenanceVehicles)
+
+// Definisce la route per creare nuovi veicoli in archivio
+router.post('/api/new_vehicle', vehicleController.createNewVehicle)
+
+// Definisce le route per ottenere tutte le vendite
+router.get('/api/sales', saleController.getAllSales)
+
+// Definisce la route per inserire una nuova vendita
+router.post('/api/new_sales', saleController.createNewSales)
+
+// Definisce le route per ottenere tutte le manutenzioni effettuate
+router.get('/api/maintenances', maintenanceController.getAllMaintenances)
+
+// Definisce la route per inserire una nuova manutenzione
+router.post('/api/new_maintenance', maintenanceController.createNewMaintenance)
+
+// Definisce la route per notificare le scadenze imminenti
+router.get('/api/notify_expiration', maintenanceController.notifyExpiration)
+
 module.exports = router // Esporta il router

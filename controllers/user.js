@@ -113,6 +113,8 @@ const createNewCustomer = async (req, res, next) => {
             return res.status(400).json({ message: "Customer already exists" });
         }
 
+        // TO-DO: check double psw?
+
         const otp = generateOTP();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // L'OTP scade in 10 minuti
 

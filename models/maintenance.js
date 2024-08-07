@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Definizione dello schema per la collezione Maintenances
 const maintenanceSchema = new mongoose.Schema({
     // Campo vehicle_id: stringa richiesta (ID del veicolo)
-    vehicle_id: {
+    vehicle_vin: {
         type: String,
         required: true
     },
