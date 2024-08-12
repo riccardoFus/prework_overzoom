@@ -66,6 +66,8 @@ const getAllCustomers = async (req, res, next) => {
     }
 };
 
+// TO-DO: a prescindere dal role -> UNA SOLA EMAIL
+
 // Funzione per creare un nuovo amministratore
 const createNewAdmin = async (req, res, next) => {
     try {
@@ -139,11 +141,93 @@ const createNewCustomer = async (req, res, next) => {
     }
 }
 
+const confirmOTPRegistrationCustomer = async (req, res, next) => {
+    try {
+        // Cerca un utente con l'email specificata e il ruolo di "customer"
+        const existingCustomer = await User.findOne({ email: req.body.email, role: 'customer' });
+
+        // Verifica se il cliente esiste
+        if (!existingCustomer) {
+            return res.status(400).json({ message: "Customer does not exist" });
+        }
+
+        const otp = req.body.otp;
+
+        // Verifica se l'OTP è valido e non è scaduto
+        if (otp && otp === existingCustomer.otp && new Date(existingCustomer.otp_expiry).getTime() >= Date.now()) {
+            return res.status(200).json({ message: "OK" });
+        } else {
+            return res.status(400).json({ message: "OTP incorrect or OTP expired" });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+const sendOTPToChangePassword = async (req, res, next) => {
+    try {
+        // Cerca un utente con l'email specificata
+        const existingUser = await User.findOne({ email: req.body.email });
+
+        // Verifica se il cliente esiste
+        if (!existingUser) {
+            return res.status(400).json({ message: "User does not exist" });
+        }
+
+        
+        const otp = generateOTP();
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // L'OTP scade in 10 minuti
+
+        // Invia l'OTP all'utente
+        await sendOTP(req.body.email, otp);
+        await User.findOneAndUpdate({email: req.body.email}, {otp: otp, otp_expiry: otpExpiry})
+        return res.status(200).json({ message: "OK" });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+const changePassword = async (req, res, next) => {
+    try {
+        // Cerca un utente con l'email specificata
+        const existingUser = await User.findOne({ email: req.body.email });
+        
+        // Verifica se l'utente esiste
+        if (!existingUser) {
+            return res.status(400).json({ message: "User does not exist" });
+        }
+
+        const otp = req.body.otp;
+
+        // Verifica se le password corrispondono
+        if (req.body.password === req.body.password_confirm) {
+            // Verifica se l'OTP è corretto e non è scaduto
+            if (otp && otp === existingUser.otp && new Date(existingUser.otp_expiry).getTime() >= Date.now()) {
+                // Aggiorna la password
+                await User.findOneAndUpdate({ email: req.body.email }, { password: req.body.password });
+                return res.status(200).json({ message: "Password changed successfully" });
+            } else {
+                return res.status(400).json({ message: "OTP incorrect or OTP expired" });
+            }
+        } else {
+            return res.status(400).json({ message: "Password confirmation does not match" });
+        }
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+
+
 // Esporta le funzioni come modulo
 module.exports = {
     getAllUsers,
     getAllAdmins,
     getAllCustomers,
     createNewAdmin,
-    createNewCustomer
+    createNewCustomer,
+    // to check
+    confirmOTPRegistrationCustomer,
+    sendOTPToChangePassword, 
+    changePassword
 };
