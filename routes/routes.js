@@ -40,4 +40,9 @@ router.post('/api/new_maintenance', maintenanceController.createNewMaintenance)
 // Definisce la route per notificare le scadenze imminenti
 router.get('/api/notify_expiration', maintenanceController.notifyExpiration)
 
+// Definisce le route per confermare la registrazione dell'utente + cambio password + modifica password conferma
+router.post('/api/confirm_otp_registration', userController.confirmOTPRegistrationCustomer)
+router.get('/api/send_otp_change_password', userController.sendOTPToChangePassword)
+router.post('/api/change_password', userController.changePassword)
+
 module.exports = router // Esporta il router

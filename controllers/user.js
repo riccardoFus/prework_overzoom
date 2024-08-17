@@ -155,6 +155,7 @@ const confirmOTPRegistrationCustomer = async (req, res, next) => {
 
         // Verifica se l'OTP è valido e non è scaduto
         if (otp && otp === existingCustomer.otp && new Date(existingCustomer.otp_expiry).getTime() >= Date.now()) {
+            await User.findOneAndUpdate({ email: req.body.email, role: 'customer'}, {confirmed_user: true})
             return res.status(200).json({ message: "OK" });
         } else {
             return res.status(400).json({ message: "OTP incorrect or OTP expired" });
