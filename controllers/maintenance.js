@@ -97,8 +97,52 @@ const notifyExpiration = async (req, res, next) => {
     }
 };
 
+const getMaintenanceReport = async (req, res, next) => {
+    try {
+        // Estrazione dei parametri dal corpo della richiesta
+        const { startDate, endDate, customer_email, vehicle_vin } = req.body;
+
+        // Costruzione del filtro dinamico basato sui parametri forniti
+        let filter = {};
+
+        // Filtro basato sulle date
+        if (startDate && endDate) {
+            filter.date = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        } else if (startDate) {
+            filter.date = { $gte: new Date(startDate) };
+        } else if (endDate) {
+            filter.date = { $lte: new Date(endDate) };
+        }
+
+        // Filtro basato sul VIN del veicolo
+        if (vehicle_vin) {
+            filter.vehicle_vin = vehicle_vin;
+        }
+
+        // Filtro basato sull'email del cliente
+        if (customer_email) {
+            // Ottieni i VINs dei veicoli posseduti dal cliente
+            const vehicles = await Vehicle.find({ current_owner_email: customer_email }).select("vin");
+            const vins = vehicles.map(vehicle => vehicle.vin);
+            filter.vehicle_vin = { $in: vins };
+        }
+
+        // Trova le manutenzioni in base al filtro costruito
+        const maintenances = await Maintenance.find(filter);
+
+        // Risposta con i dati filtrati
+        return res.status(200).json({ maintenances });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     getAllMaintenances, // Esporta la funzione getAllMaintenances
     createNewMaintenance, // Esporta la funzione createNewMaintenance
-    notifyExpiration // Esporta la funzione notifyExpiration
+    notifyExpiration, // Esporta la funzione notifyExpiration
+    getMaintenanceReport
 };

@@ -1,5 +1,6 @@
 const Vehicle = require("../models/vehicle")
 const User = require("../models/user")
+const Sale = require("../models/sale")
 
 const getAllVehicles = async (req, res, next) => {
     try{
@@ -33,19 +34,23 @@ const createNewVehicle = async (req, res, next) => {
         // Controlla se il veicolo esiste già
         const existingVehicle = await Vehicle.findOne({ vin: req.body.vin });
         if (existingVehicle) {
-            return res.status(400).json({ message: "Veicolo già esistente" });
-        }
+            // Controlla se l'utente richiedente è un amministratore o un cliente
+            const requester_email = req.body.requester_email;
 
-        // Controlla se l'utente richiedente è un amministratore o un cliente
-        const requester_email = req.body.requester_email;
-
-        const requester = await User.findOne({ email: requester_email, role: 'admin' });
-        if (!requester) {
-            const requester2 = await User.findOne({ email: requester_email, role: 'customer' });
-            if (!requester2) {
-                return res.status(404).json({ message: "Utente non esistente" });
-            } else {
-                return res.status(403).json({ message: "Non autorizzato: verifica per i clienti da completare" });
+            const requester = await User.findOne({ email: requester_email, role: 'admin' });
+            if (!requester) {
+                const requester2 = await User.findOne({ email: requester_email, role: 'customer' });
+                if (!requester2) {
+                    return res.status(404).json({ message: "Utente non esistente" });
+                } else {
+                    const existingSale = await Sale.findOne({customer_email : requester_email})
+                    if(!existingSale || existingVehicle.current_owner_email !== ""){
+                        return res.status(403).json({ message: "Associazione non autorizzata" });
+                    }else{
+                        const updatedVehicle = await Vehicle.findOneAndUpdate({ vin: req.body.vin }, {current_owner_email: requester_email});
+                        return res.status(201).json({message: "Modifica associazione customer effettuata correttamente"});
+                    }
+                }
             }
         }
 

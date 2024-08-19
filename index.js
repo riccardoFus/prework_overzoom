@@ -2,6 +2,18 @@ const express = require('express');
 const mongoose = require('mongoose');
 const User = require('./models/user');
 require('dotenv').config();
+const bcrypt = require('bcrypt')
+
+async function hashPassword(password) {
+    const saltRounds = 10; // The higher the salt rounds, the more secure the hash, but also slower to generate
+    try {
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        return hashedPassword;
+    } catch (err) {
+        console.error("Error hashing password: ", err);
+        throw err;
+    }
+}
 
 // Funzione per verificare se un amministratore esiste già nel database
 async function checkIfAdminAlreadyExists() {
@@ -20,12 +32,14 @@ function setupFirstAdmin(){
     mongoose.connect(process.env.URL_DB)
     .then(async () => {
         console.log('Connected to MongoDB');
+
+        const hashedPassword = await hashPassword(process.env.PASSWORD_ADMIN_1)
         
         // Creazione del primo amministratore
         const firstAdmin = new User({
             username: 'admin1',
             email: 'admin@automotive.com',
-            password: process.env.PASSWORD_ADMIN_1,
+            password: hashedPassword,
             confirmed_user: true,
             role: 'admin',
             otp: '',
@@ -52,26 +66,6 @@ function setupFirstAdmin(){
     })
     .catch((error) => console.error('MongoDB connection error:', error));
 }
-
-/*
-function sendEmail(){
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-    const msg = {
-        to: 'fusyriccardo@gmail.com',
-        from: 'fakeautomotive@gmail.com',
-        subject: 'test subject',
-        text: 'test text'
-    }      
-    sgMail
-        .send(msg)
-        .then(() => {
-            console.log("Email sent")
-        }) 
-        .catch((error) => {
-            console.error(error)
-        })
-}
-*/
 
 const app = express();
 const port = 3000;
