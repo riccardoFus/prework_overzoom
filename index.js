@@ -1,17 +1,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const User = require('./models/user');
-require('dotenv').config();
-const bcrypt = require('bcrypt')
+const User = require('./models/user'); // Importa il modello User
+require('dotenv').config(); // Carica le variabili d'ambiente dal file .env
+const bcrypt = require('bcrypt');
 
+// Funzione per generare l'hash della password
 async function hashPassword(password) {
-    const saltRounds = 10; // The higher the salt rounds, the more secure the hash, but also slower to generate
+    const saltRounds = 10; // Maggiore è il numero di salt rounds, più sicuro è l'hash, ma più lento da generare
     try {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         return hashedPassword;
     } catch (err) {
         console.error("Error hashing password: ", err);
-        throw err;
+        throw err; // Propaga l'errore per la gestione successiva
     }
 }
 
@@ -26,15 +27,16 @@ async function checkIfAdminAlreadyExists() {
     }
 }
 
-// Funzione per configurare l'amministratore
-function setupFirstAdmin(){
-    // Connessione a MongoDB
-    mongoose.connect(process.env.URL_DB)
-    .then(async () => {
+// Funzione per configurare il primo amministratore
+async function setupFirstAdmin() {
+    try {
+        // Connessione a MongoDB
+        await mongoose.connect(process.env.URL_DB);
         console.log('Connected to MongoDB');
 
-        const hashedPassword = await hashPassword(process.env.PASSWORD_ADMIN_1)
-        
+        // Hash della password dell'amministratore
+        const hashedPassword = await hashPassword(process.env.PASSWORD_ADMIN_1);
+
         // Creazione del primo amministratore
         const firstAdmin = new User({
             username: 'admin1',
@@ -43,51 +45,51 @@ function setupFirstAdmin(){
             confirmed_user: true,
             role: 'admin',
             otp: '',
-            otp_expiry: Date()
+            otp_expiry: new Date() // Imposta l'OTP expiry alla data corrente
         });
 
         // Verifica se l'amministratore esiste già
-        try {
-            const result = await checkIfAdminAlreadyExists();
-            if (!result) {
-                // Salva il primo amministratore se non esiste
-                try {
-                    const savedAdmin = await firstAdmin.save();
-                    console.log("First admin saved: ", savedAdmin);
-                } catch (error) {
-                    console.error("Error saving admin: ", error);
-                }
-            } else {
-                console.log("Admin already exists");
+        const adminExists = await checkIfAdminAlreadyExists();
+        if (!adminExists) {
+            // Salva il primo amministratore se non esiste
+            try {
+                const savedAdmin = await firstAdmin.save();
+                console.log("First admin saved: ", savedAdmin);
+            } catch (error) {
+                console.error("Error saving admin: ", error);
             }
-        } catch (error) {
-            console.error("Error during admin check or save operation:", error);
+        } else {
+            console.log("Admin already exists");
         }
-    })
-    .catch((error) => console.error('MongoDB connection error:', error));
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+    }
 }
 
 const app = express();
 const port = 3000;
 const routes = require("./routes/routes");
 
+// Middleware per la gestione dei dati JSON e URL encoded
 app.use(express.json());
-app.use(express.urlencoded({extended : true}));
+app.use(express.urlencoded({ extended: true }));
+
+// Middleware per servire file statici e impostare le rotte
 app.use(express.static(__dirname + "/html/"), routes);
 
-// Avvia il server
-app.listen(port, () => {  
+// Avvia il server e configura il primo amministratore
+app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
-    setupFirstAdmin()
+    setupFirstAdmin();
 });
 
+// Middleware per il logging delle richieste
 app.use((req, res, next) => {
-    console.log("called: " + req.method + ' ' + req.url)
-    next()
-})
+    console.log("called: " + req.method + ' ' + req.url);
+    next();
+});
 
 /* Default 404 handler */
 app.use((req, res) => {
-    res.status(404);
-    res.json({error: 'Not found'});
+    res.status(404).json({ error: 'Not found' });
 });

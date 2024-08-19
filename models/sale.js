@@ -1,26 +1,26 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose'); // Importa il modulo mongoose
 
-// Definizione dello schema per la collezione Sales
+// Definizione dello schema per la collezione "Sales"
 const saleSchema = new mongoose.Schema({
-    // Campo vehicle_id: stringa richiesta (ID del veicolo venduto)
+    // Campo vehicle_vin: stringa richiesta (ID del veicolo venduto)
     vehicle_vin: {
         type: String,
-        required: true
+        required: true // Questo campo è obbligatorio
     },
-    // Campo customer_id: stringa richiesta (ID del cliente che ha acquistato il veicolo)
+    // Campo customer_email: stringa richiesta (email del cliente che ha acquistato il veicolo)
     customer_email: {
-        type: String, 
-        required: true
+        type: String,
+        required: true // Questo campo è obbligatorio
     },
     // Campo sale_date: data richiesta (data della vendita)
     sale_date: {
         type: Date,
-        required: true
+        required: true // Questo campo è obbligatorio
     },
     // Campo price: numero a virgola mobile richiesto (prezzo di vendita)
     price: {
         type: Number,
-        required: true
+        required: true // Questo campo è obbligatorio
     }
 });
 

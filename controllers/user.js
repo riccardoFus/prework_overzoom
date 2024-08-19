@@ -2,19 +2,19 @@ const { request } = require("express"); // Importa il modulo request da express
 const User = require("../models/user"); // Importa il modello User
 const crypto = require('crypto'); // Importa il modulo crypto per generare l'OTP
 const nodemailer = require("nodemailer"); // Importa il modulo nodemailer per inviare email
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt'); // Importa bcrypt per la gestione delle password
+const jwt = require('jsonwebtoken'); // Importa jwt per la generazione dei token
 
 // Funzione per generare un OTP a 6 cifre esadecimali
 function generateOTP() {
     return crypto.randomBytes(3).toString('hex');
 }
 
+// Funzione per hashare una password
 async function hashPassword(password) {
-    const saltRounds = 10; // The higher the salt rounds, the more secure the hash, but also slower to generate
+    const saltRounds = 10; // Maggiore è il numero di sali, più sicuro sarà l'hash, ma anche più lento da generare
     try {
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-        return hashedPassword;
+        return await bcrypt.hash(password, saltRounds);
     } catch (err) {
         console.error("Error hashing password: ", err);
         throw err;
@@ -62,8 +62,8 @@ const getAllUsers = async (req, res, next) => {
 // Funzione per ottenere tutti gli amministratori
 const getAllAdmins = async (req, res, next) => {
     try {
-        const users = await User.find({ 'role': 'admin' });
-        return res.json(users);
+        const admins = await User.find({ role: 'admin' });
+        return res.json(admins);
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -72,14 +72,12 @@ const getAllAdmins = async (req, res, next) => {
 // Funzione per ottenere tutti i clienti
 const getAllCustomers = async (req, res, next) => {
     try {
-        const users = await User.find({ 'role': 'customer' });
-        return res.json(users);
+        const customers = await User.find({ role: 'customer' });
+        return res.json(customers);
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 };
-
-// TO-DO: a prescindere dal role -> UNA SOLA EMAIL
 
 // Funzione per creare un nuovo amministratore
 const createNewAdmin = async (req, res, next) => {
@@ -98,7 +96,8 @@ const createNewAdmin = async (req, res, next) => {
             return res.status(400).json({ message: "User with this email already exists" });
         }
 
-        const hashedPassword = await hashPassword(req.body.password)
+        // Hash della password
+        const hashedPassword = await hashPassword(req.body.password);
 
         // Crea un nuovo amministratore
         const newAdmin = new User({
@@ -114,7 +113,6 @@ const createNewAdmin = async (req, res, next) => {
         // Salva il nuovo amministratore
         const savedAdmin = await newAdmin.save();
         return res.status(201).json(savedAdmin);
-
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: err.message });
@@ -130,12 +128,12 @@ const createNewCustomer = async (req, res, next) => {
             return res.status(400).json({ message: "User with this email already exists" });
         }
 
-        // TO-DO: check double psw?
-
+        // Genera l'OTP e la data di scadenza
         const otp = generateOTP();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // L'OTP scade in 10 minuti
 
-        const hashedPassword = await hashPassword(req.body.password)
+        // Hash della password
+        const hashedPassword = await hashPassword(req.body.password);
 
         // Crea un nuovo cliente
         const newCustomer = new User({
@@ -156,8 +154,9 @@ const createNewCustomer = async (req, res, next) => {
         console.error(err);
         return res.status(500).json({ error: err.message });
     }
-}
+};
 
+// Funzione per confermare la registrazione del cliente tramite OTP
 const confirmOTPRegistrationCustomer = async (req, res, next) => {
     try {
         // Cerca un utente con l'email specificata e il ruolo di "customer"
@@ -172,7 +171,7 @@ const confirmOTPRegistrationCustomer = async (req, res, next) => {
 
         // Verifica se l'OTP è valido e non è scaduto
         if (otp && otp === existingCustomer.otp && new Date(existingCustomer.otp_expiry).getTime() >= Date.now()) {
-            await User.findOneAndUpdate({ email: req.body.email, role: 'customer'}, {confirmed_user: true})
+            await User.findOneAndUpdate({ email: req.body.email, role: 'customer' }, { confirmed_user: true });
             return res.status(200).json({ message: "OK" });
         } else {
             return res.status(400).json({ message: "OTP incorrect or OTP expired" });
@@ -180,44 +179,45 @@ const confirmOTPRegistrationCustomer = async (req, res, next) => {
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
-}
+};
 
+// Funzione per inviare un OTP per il cambio password
 const sendOTPToChangePassword = async (req, res, next) => {
     try {
         // Cerca un utente con l'email specificata
         const existingUser = await User.findOne({ email: req.body.email });
 
-        // Verifica se il cliente esiste
+        // Verifica se l'utente esiste
         if (!existingUser) {
             return res.status(400).json({ message: "User does not exist" });
         }
 
-        
+        // Genera l'OTP e la data di scadenza
         const otp = generateOTP();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // L'OTP scade in 10 minuti
 
         // Invia l'OTP all'utente
         await sendOTP(req.body.email, otp);
-        await User.findOneAndUpdate({email: req.body.email}, {otp: otp, otp_expiry: otpExpiry})
+        await User.findOneAndUpdate({ email: req.body.email }, { otp: otp, otp_expiry: otpExpiry });
         return res.status(200).json({ message: "OK" });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
-}
+};
 
+// Funzione per cambiare la password
 const changePassword = async (req, res, next) => {
     try {
         // Cerca un utente con l'email specificata
         const existingUser = await User.findOne({ email: req.body.email });
-        
+
         // Verifica se l'utente esiste
         if (!existingUser) {
             return res.status(400).json({ message: "User does not exist" });
         }
 
         const otp = req.body.otp;
-        const hashedPassword = hashPassword(req.body.password)
-
+        const hashedPassword = await hashPassword(req.body.password);
 
         // Verifica se l'OTP è corretto e non è scaduto
         if (otp && otp === existingUser.otp && new Date(existingUser.otp_expiry).getTime() >= Date.now()) {
@@ -230,8 +230,9 @@ const changePassword = async (req, res, next) => {
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
-}
+};
 
+// Funzione per il login dell'utente
 const loginUser = async (req, res, next) => {
     try {
         // Cerca l'utente in base all'email fornita
@@ -248,8 +249,8 @@ const loginUser = async (req, res, next) => {
         }
 
         // Verifica la password
-        const hashedPassword = await hashPassword(req.body.password)
-        if (hashedPassword === user.password) {
+        const isPasswordMatch = await bcrypt.compare(req.body.password, user.password);
+        if (!isPasswordMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
@@ -264,16 +265,15 @@ const loginUser = async (req, res, next) => {
 
         // Restituisce il token e i dettagli dell'utente
         return res.status(200).json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
-
     } catch (err) {
-        return res.status(500).json({ error: err.message }); // Gestisce eventuali errori e restituisce un errore con stato 500
+        return res.status(500).json({ error: err.message });
     }
-}
+};
 
+// Funzione per il logout dell'utente
 const logoutUser = (req, res) => {
-    return res.status(200).json({message: "OK"})
-}
-
+    return res.status(200).json({ message: "OK" });
+};
 
 // Esporta le funzioni come modulo
 module.exports = {
@@ -283,7 +283,7 @@ module.exports = {
     createNewAdmin,
     createNewCustomer,
     confirmOTPRegistrationCustomer,
-    sendOTPToChangePassword, 
+    sendOTPToChangePassword,
     changePassword,
     loginUser,
     logoutUser

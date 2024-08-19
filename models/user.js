@@ -1,36 +1,39 @@
+const mongoose = require('mongoose'); // Importa il modulo mongoose
 
-const mongoose = require("mongoose");
-
-// Definizione dello schema per la collezione Users
+// Definizione dello schema per la collezione "Users"
 const userSchema = new mongoose.Schema({
-    // Campo username: stringa richiesta
-    username : {
-        type : String, 
-        required : true
+    // Campo username: stringa richiesta (nome utente)
+    username: {
+        type: String,
+        required: true // Questo campo è obbligatorio
     },
-    // Campo email: stringa richiesta
-    email : {
-        type : String,
-        required : true
+    // Campo email: stringa richiesta (email dell'utente)
+    email: {
+        type: String,
+        required: true, // Questo campo è obbligatorio
+        unique: true // L'email deve essere unica per ogni utente
     },
-    // Campo password: stringa richiesta
-    password : {
-        type : String,
-        required : true  
+    // Campo password: stringa richiesta (password dell'utente)
+    password: {
+        type: String,
+        required: true // Questo campo è obbligatorio
     },
-    // Campo confirmed_user: booleano richiesto
-    confirmed_user : {
-        type : Boolean,
-        required : true
+    // Campo confirmed_user: booleano richiesto (indica se l'utente è stato confermato)
+    confirmed_user: {
+        type: Boolean,
+        required: true // Questo campo è obbligatorio
     },
     // Campo role: stringa con valori predefiniti "admin" o "customer"
-    role : {
-        type : String,
-        enum : ["admin", "customer"]
+    role: {
+        type: String,
+        enum: ["admin", "customer"], // Definisce i valori accettabili per il ruolo
+        default: "customer" // Imposta "customer" come valore predefinito
     },
+    // Campo otp: stringa opzionale (codice OTP per la verifica)
     otp: {
         type: String
     },
+    // Campo otp_expiry: data opzionale (data di scadenza dell'OTP)
     otp_expiry: {
         type: Date
     }
